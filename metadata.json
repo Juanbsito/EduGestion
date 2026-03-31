@@ -1,0 +1,5 @@
+{
+  "name": "EduGestión Pro",
+  "description": "Comprehensive school management system for initial, primary, secondary, and tertiary levels with student CRUD, academic tracking, and automated billing.",
+  "requestFramePermissions": []
+}
