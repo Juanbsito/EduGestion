@@ -1,5 +1,5 @@
 {
-  "name": "edugestión-pro",
+  "name": "edugestion-pro",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,10 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react-router-dom": "^7.13.2",
-    "react-dom": "^19.2.4",
+    "@google/genai": "^1.47.0",
+    "@supabase/supabase-js": "^2.49.1",
     "react": "^19.2.4",
-    "@google/genai": "^1.47.0"
+    "react-dom": "^19.2.4",
+    "react-router-dom": "^7.13.2"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
