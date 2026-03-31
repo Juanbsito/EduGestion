@@ -1,16 +1,16 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
-import Layout from './components/Layout';
+import Layout from './components/Layout.tsx';
 import Dashboard from './components/Dashboard.tsx';
-import StudentCRUD from './components/StudentCRUD';
-import AcademicCRUD from './components/AcademicCRUD';
-import BillingCRUD from './components/BillingCRUD';
-import CareerCRUD from './components/CareerCRUD';
-import ExamManager from './components/ExamManager';
-import { INITIAL_STUDENTS, INITIAL_SUBJECTS, INITIAL_PAYMENTS } from './services/mockData';
-import { MOCK_CAREERS } from './constants';
-import { Student, Subject, Payment, Career, EducationLevel, ExamEnrollment } from './types';
+import StudentCRUD from './components/StudentCRUD.tsx';
+import AcademicCRUD from './components/AcademicCRUD.tsx';
+import BillingCRUD from './components/BillingCRUD.tsx';
+import CareerCRUD from './components/CareerCRUD.tsx';
+import ExamManager from './components/ExamManager.tsx';
+import { INITIAL_STUDENTS, INITIAL_SUBJECTS, INITIAL_PAYMENTS } from './services/mockData.ts';
+import { MOCK_CAREERS } from './constants.ts';
+import { Student, Subject, Payment, Career, EducationLevel, ExamEnrollment } from './types.ts';
 
 const App: React.FC = () => {
   const [students, setStudents] = useState<Student[]>(INITIAL_STUDENTS);
