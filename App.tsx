@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
-import Dashboard from './components/Dashboard';
+import Dashboard from './components/Dashboard.tsx';
 import StudentCRUD from './components/StudentCRUD';
 import AcademicCRUD from './components/AcademicCRUD';
 import BillingCRUD from './components/BillingCRUD';
