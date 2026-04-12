@@ -1,229 +1,148 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { HashRouter as Router, Routes, Route } from 'react-router-dom';
-import Layout from './components/Layout.tsx';
-import Dashboard from './components/Dashboard.tsx';
-import StudentCRUD from './components/StudentCRUD.tsx';
-import AcademicCRUD from './components/AcademicCRUD.tsx';
-import BillingCRUD from './components/BillingCRUD.tsx';
-import CareerCRUD from './components/CareerCRUD.tsx';
-import ExamManager from './components/ExamManager.tsx';
-import { INITIAL_STUDENTS, INITIAL_SUBJECTS, INITIAL_PAYMENTS } from './services/mockData.ts';
-import { MOCK_CAREERS } from './constants.ts';
-import { Student, Subject, Payment, Career, EducationLevel, ExamEnrollment } from './types.ts';
-import { supabase } from './services/supabase.ts';
+import React, { Suspense, useState } from 'react';
+import { AuthProvider, useAuth } from './authContext';
+import Layout from './components/Layout';
+import Dashboard from './Dashboard';
+import StudentsModule from './components/StudentsModule';
+import AcademicModule from './components/AcademicModule';
+import ExamsModule from './components/ExamsModule';
+import BillingModule from './components/BillingModule';
+import NewStudentForm from './components/NewStudentForm';
+import AttendanceModule from './components/AttendanceModule';
+import ReportsModule from './components/ReportsModule';
+import CalendarModule from './components/CalendarModule';
+import UserManagement from './components/UserManagement';
+import PaymentPortal from './components/PaymentPortal';
+import { INITIAL_PAYMENTS } from './constants';
+import { ShieldAlert, Loader2, ShieldCheck, CreditCard } from 'lucide-react';
+import { supabase } from './supabaseClient';
+import { Student } from './types';
 
-const App: React.FC = () => {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [careers, setCareers] = useState<Career[]>([]);
-  const [enrollments, setEnrollments] = useState<ExamEnrollment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+const LoginForm = ({ onOpenPaymentPortal }: { onOpenPaymentPortal: () => void }) => {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const handleLogin = async (e?: any, demoEmail?: string) => {
+    if (e) e.preventDefault();
+    setLoading(true);
+    await supabase.auth.signInWithOtp({ email: demoEmail || email });
+    setLoading(false);
+  };
 
-  const fetchData = useCallback(async () => {
-    try {
-      const [
-        { data: studentsData },
-        { data: subjectsData },
-        { data: paymentsData },
-        { data: careersData },
-        { data: enrollmentsData }
-      ] = await Promise.all([
-        supabase.from('students').select('*'),
-        supabase.from('subjects').select('*'),
-        supabase.from('payments').select('*'),
-        supabase.from('careers').select('*'),
-        supabase.from('enrollments').select('*')
-      ]);
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+      <div className="max-w-md w-full bg-white rounded-[2rem] shadow-2xl overflow-hidden border border-slate-100">
+        <div className="bg-indigo-600 p-10 text-center text-white">
+           <h1 className="text-2xl font-black tracking-tight">EduManager Pro</h1>
+           <p className="text-indigo-100 font-bold text-xs mt-1 uppercase tracking-widest opacity-80">Gestión Institucional</p>
+        </div>
+        <div className="p-8 space-y-6">
+          <form onSubmit={handleLogin} className="space-y-4">
+            <input 
+              type="email" 
+              placeholder="correo@ejemplo.com" 
+              value={email} 
+              onChange={e => setEmail(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <button className="w-full bg-indigo-600 text-white p-4 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg flex items-center justify-center gap-2">
+              {loading ? <Loader2 className="animate-spin" /> : 'Entrar'}
+            </button>
+          </form>
+          <div className="relative flex items-center"><span className="flex-1 border-t border-slate-100"></span><span className="mx-4 text-[10px] font-black text-slate-300 uppercase">Prueba el sistema</span><span className="flex-1 border-t border-slate-100"></span></div>
+          <button onClick={() => handleLogin(null, 'superadmin@edumanager.pro')} className="w-full bg-slate-800 text-white p-4 rounded-xl font-bold hover:bg-slate-900 transition-all flex items-center justify-center gap-2">
+            <ShieldCheck size={18} /> Acceso Demo Superadmin
+          </button>
+          <div className="pt-4 border-t border-slate-50">
+            <button 
+              onClick={onOpenPaymentPortal}
+              className="w-full bg-white text-indigo-600 border border-indigo-100 p-4 rounded-xl font-bold hover:bg-indigo-50 transition-all flex items-center justify-center gap-2"
+            >
+              <CreditCard size={18} /> Pago de Cuotas (Padres)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-      if (studentsData) setStudents(studentsData);
-      if (subjectsData) setSubjects(subjectsData);
-      if (paymentsData) setPayments(paymentsData);
-      if (careersData) setCareers(careersData);
-      if (enrollmentsData) setEnrollments(enrollmentsData);
-    } catch (error) {
-      console.error('Error fetching data from Supabase:', error);
-      // Fallback to mock data if fetch fails (optional)
-      setStudents(INITIAL_STUDENTS);
-      setSubjects(INITIAL_SUBJECTS);
-      setPayments(INITIAL_PAYMENTS);
-      setCareers(MOCK_CAREERS);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+const AppContent = () => {
+  const { user, profile, loading, signOut } = useAuth();
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [showPaymentPortal, setShowPaymentPortal] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const addStudent = useCallback(async (s: Student) => {
-    const { error } = await supabase.from('students').insert(s);
-    if (!error) setStudents(prev => [...prev, s]);
-  }, []);
-
-  const updateStudent = useCallback(async (s: Student) => {
-    const { error } = await supabase.from('students').update(s).eq('id', s.id);
-    if (!error) setStudents(prev => prev.map(st => st.id === s.id ? s : st));
-  }, []);
-
-  const deleteStudent = useCallback(async (id: string) => {
-    const { error } = await supabase.from('students').delete().eq('id', id);
-    if (!error) setStudents(prev => prev.filter(s => s.id !== id));
-  }, []);
-
-  const addSubject = useCallback(async (s: Subject) => {
-    const { error } = await supabase.from('subjects').insert(s);
-    if (!error) setSubjects(prev => [...prev, s]);
-  }, []);
-
-  const updateSubject = useCallback(async (s: Subject) => {
-    const { error } = await supabase.from('subjects').update(s).eq('id', s.id);
-    if (!error) setSubjects(prev => prev.map(sub => sub.id === s.id ? s : sub));
-  }, []);
-
-  const deleteSubject = useCallback(async (id: string) => {
-    const { error } = await supabase.from('subjects').delete().eq('id', id);
-    if (!error) setSubjects(prev => prev.filter(s => s.id !== id));
-  }, []);
-
-  const addCareer = useCallback(async (c: Career) => {
-    const { error } = await supabase.from('careers').insert(c);
-    if (!error) setCareers(prev => [...prev, c]);
-  }, []);
-
-  const updateCareer = useCallback(async (c: Career) => {
-    const { error } = await supabase.from('careers').update(c).eq('id', c.id);
-    if (!error) setCareers(prev => prev.map(car => car.id === c.id ? c : car));
-  }, []);
-
-  const deleteCareer = useCallback(async (id: string) => {
-    const { error } = await supabase.from('careers').delete().eq('id', id);
-    if (!error) setCareers(prev => prev.filter(c => c.id !== id));
-  }, []);
-
-  const addPayment = useCallback(async (p: Payment) => {
-    const { error } = await supabase.from('payments').insert(p);
-    if (!error) setPayments(prev => [...prev, p]);
-  }, []);
-
-  const updatePaymentStatus = useCallback(async (id: string, status: 'Paid') => {
-    const paidDate = new Date().toISOString();
-    const { error } = await supabase.from('payments').update({ status, paidDate }).eq('id', id);
-    if (!error) {
-      setPayments(prev => prev.map(p => p.id === id ? { ...p, status, paidDate } : p));
-    }
-  }, []);
-
-  const addEnrollment = useCallback(async (e: ExamEnrollment) => {
-    const { error } = await supabase.from('enrollments').insert(e);
-    if (!error) setEnrollments(prev => [...prev, e]);
-  }, []);
-
-  useEffect(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
-    setPayments(prevPayments => {
-      let hasChange = false;
-      const updated = prevPayments.map(p => {
-        if (p.status === 'Pending' && p.dueDate < todayStr) {
-          hasChange = true;
-          return { ...p, status: 'Overdue' as const };
-        }
-        return p;
-      });
-      if (hasChange) {
-        // Sync overdue status to Supabase
-        updated.forEach(async (p) => {
-          if (p.status === 'Overdue') {
-            await supabase.from('payments').update({ status: 'Overdue' }).eq('id', p.id);
-          }
-        });
-      }
-      return hasChange ? updated : prevPayments;
-    });
-  }, []);
-
-  if (isLoading) {
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-indigo-600" size={40} /></div>;
+  
+  if (showPaymentPortal) {
     return (
-      <div className="flex items-center justify-center h-screen bg-slate-50">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600 font-bold">Conectando con Supabase...</p>
+      <div className="min-h-screen bg-slate-50">
+        <div className="p-6 max-w-4xl mx-auto">
+          <button 
+            onClick={() => setShowPaymentPortal(false)}
+            className="mb-8 text-slate-400 font-bold flex items-center gap-2 hover:text-slate-600 transition-colors"
+          >
+            ← Volver al inicio
+          </button>
+          <PaymentPortal />
         </div>
       </div>
     );
   }
 
+  if (!user) return <LoginForm onOpenPaymentPortal={() => setShowPaymentPortal(true)} />;
+  if (!profile) return <div className="p-20 text-center"><ShieldAlert className="mx-auto text-rose-500" size={64} /><h2 className="text-xl font-bold mt-4">Perfil no encontrado</h2><button onClick={signOut} className="text-indigo-600 font-bold mt-4 underline">Cerrar Sesión</button></div>;
+
+  const handleEditStudent = (student: Student) => {
+    setEditingStudent(student);
+    setActiveTab('new-student');
+  };
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'dashboard': return <Dashboard schoolId={profile.school_id} />;
+      case 'students-list': return <StudentsModule schoolId={profile.school_id} onEditStudent={handleEditStudent} />;
+      case 'new-student': return (
+        <NewStudentForm 
+          initialData={editingStudent || undefined}
+          onCancel={() => { setEditingStudent(null); setActiveTab('students-list'); }} 
+          onSave={() => { setEditingStudent(null); setActiveTab('students-list'); }} 
+        />
+      );
+      case 'subjects': return <AcademicModule key="subjects" view="subjects" />;
+      case 'careers': return <AcademicModule key="careers" view="careers" />;
+      case 'enrollments': return <AcademicModule key="enrollments" view="enrollments" />;
+      case 'exams-schedule': return <ExamsModule key="exams" view="schedule" />;
+      case 'exams-enroll': return <ExamsModule key="exams-e" view="enrollment" />;
+      case 'fees': return <BillingModule view="fees" />;
+      case 'billing-config': return <BillingModule view="config" />;
+      case 'attendance': return <AttendanceModule />;
+      case 'reports': return <ReportsModule />;
+      case 'calendar': return <CalendarModule />;
+      case 'users': return <UserManagement />;
+      default: return <Dashboard schoolId={profile.school_id} />;
+    }
+  };
+
   return (
-    <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Dashboard students={students} payments={payments} enrollments={enrollments} />} />
-          <Route 
-            path="/students" 
-            element={
-              <StudentCRUD 
-                students={students} 
-                subjects={subjects}
-                careers={careers}
-                payments={payments}
-                onAdd={addStudent} 
-                onUpdate={updateStudent} 
-                onDelete={deleteStudent} 
-              />
-            } 
-          />
-          <Route 
-            path="/careers" 
-            element={
-              <CareerCRUD 
-                careers={careers} 
-                onAdd={addCareer} 
-                onUpdate={updateCareer}
-                onDelete={deleteCareer} 
-              />
-            } 
-          />
-          <Route 
-            path="/academic" 
-            element={
-              <AcademicCRUD 
-                subjects={subjects} 
-                careers={careers}
-                onAdd={addSubject} 
-                onUpdate={updateSubject} 
-                onDelete={deleteSubject} 
-              />
-            } 
-          />
-          <Route 
-            path="/billing" 
-            element={
-              <BillingCRUD 
-                payments={payments} 
-                students={students} 
-                onAddPayment={addPayment} 
-                onUpdateStatus={updatePaymentStatus} 
-              />
-            } 
-          />
-          <Route 
-            path="/exams" 
-            element={
-              <ExamManager 
-                subjects={subjects} 
-                students={students} 
-                payments={payments} 
-                enrollments={enrollments}
-                onEnroll={addEnrollment}
-              />
-            } 
-          />
-        </Routes>
-      </Layout>
-    </Router>
+    <Layout 
+      activeTab={activeTab} 
+      setActiveTab={setActiveTab} 
+      userRole={profile.role} 
+      userName={profile.full_name} 
+      onLogout={signOut}
+    >
+      <Suspense fallback={<div className="p-20 flex justify-center"><Loader2 className="animate-spin text-indigo-600" size={40} /></div>}>
+        {renderContent()}
+      </Suspense>
+    </Layout>
   );
 };
+
+const App = () => (
+  <AuthProvider>
+    <AppContent />
+  </AuthProvider>
+);
 
 export default App;

@@ -1,153 +1,100 @@
 
 import React from 'react';
-import { EducationLevel, Student, Payment, ExamEnrollment } from '../types.ts';
-import { MONTHLY_FEES } from '../constants.ts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { Users, GraduationCap, DollarSign, AlertCircle } from 'lucide-react';
+import { Student, Payment, AcademicLevel } from '../types';
 
 interface DashboardProps {
   students: Student[];
   payments: Payment[];
-  enrollments: ExamEnrollment[];
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ students, payments, enrollments }) => {
-  const overdueCount = payments.filter(p => p.status === 'Overdue').length;
-  const currentMonth = new Date().getMonth() + 1;
-  const currentYear = new Date().getFullYear();
-  const monthPayments = payments.filter(p => p.month === currentMonth && p.year === currentYear);
+const Dashboard: React.FC<DashboardProps> = ({ students, payments }) => {
+  const totalStudents = students.length;
+  const activeStudents = students.filter(s => s.status === 'ACTIVE').length;
   
-  const totalCollected = monthPayments
-    .filter(p => p.status === 'Paid')
-    .reduce((acc, p) => acc + p.amount, 0);
-    
-  const collectionRate = monthPayments.length > 0 
-    ? Math.round((monthPayments.filter(p => p.status === 'Paid').length / monthPayments.length) * 100)
-    : 0;
+  const pendingPayments = payments.filter(p => !p.isPaid).length;
+  const totalCollected = payments
+    .filter(p => p.isPaid)
+    .reduce((acc, curr) => acc + curr.amount, 0);
 
-  const soonestExam = enrollments.length > 0 
-    ? [...enrollments].sort((a, b) => new Date(a.examDate).getTime() - new Date(b.examDate).getTime())[0]
-    : null;
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
-  };
-
-  const levelDistribution = Object.values(EducationLevel).map(level => ({
-    level,
+  const studentsByLevel = Object.values(AcademicLevel).map(level => ({
+    name: level,
     count: students.filter(s => s.level === level).length
   }));
 
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
+
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Top Stats */}
+    <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-7 rounded-[2.5rem] shadow-sm border border-slate-100 hover:shadow-2xl hover:shadow-indigo-100/50 transition-all group">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-            <i className="fas fa-user-graduate"></i>
-          </div>
-          <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Matrícula Activa</div>
-          <div className="text-4xl font-black text-slate-900 tracking-tight">{students.length}</div>
-          <div className="mt-4 text-emerald-500 text-[10px] flex items-center gap-1 font-bold">
-             <i className="fas fa-arrow-up"></i> +4% este mes
-          </div>
-        </div>
-        
-        <div className="bg-white p-7 rounded-[2.5rem] shadow-sm border border-slate-100 hover:shadow-2xl hover:shadow-rose-100/50 transition-all group">
-          <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl mb-4 group-hover:bg-rose-600 group-hover:text-white transition-all">
-            <i className="fas fa-exclamation-circle"></i>
-          </div>
-          <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Mora Pendiente</div>
-          <div className="text-4xl font-black text-rose-600 tracking-tight">{overdueCount}</div>
-          <div className="mt-4 text-rose-400 text-[10px] flex items-center gap-1 font-bold uppercase">
-             Revisar vencimientos
-          </div>
-        </div>
-
-        <div className="bg-white p-7 rounded-[2.5rem] shadow-sm border border-slate-100 hover:shadow-2xl hover:shadow-emerald-100/50 transition-all group">
-          <div className="flex justify-between items-start mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl group-hover:bg-emerald-600 group-hover:text-white transition-all">
-              <i className="fas fa-wallet"></i>
-            </div>
-            <div className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg font-black text-[10px]">{collectionRate}%</div>
-          </div>
-          <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Recaudado</div>
-          <div className="text-3xl font-black text-slate-900 tracking-tight">${totalCollected.toLocaleString()}</div>
-          <div className="w-full bg-slate-100 h-1.5 rounded-full mt-4 overflow-hidden">
-             <div className="bg-emerald-500 h-full transition-all duration-1000" style={{ width: `${collectionRate}%` }}></div>
-          </div>
-        </div>
-
-        <div className="bg-white p-7 rounded-[2.5rem] shadow-sm border border-slate-100 hover:shadow-2xl hover:shadow-blue-100/50 transition-all group">
-          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl mb-4 group-hover:bg-blue-600 group-hover:text-white transition-all">
-            <i className="fas fa-calendar-star"></i>
-          </div>
-          <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Próxima Fecha</div>
-          <div className="text-3xl font-black text-blue-600 tracking-tight">{soonestExam ? formatDate(soonestExam.examDate) : 'N/A'}</div>
-          <div className="mt-4 text-blue-400 text-[10px] font-bold uppercase">
-             {enrollments.length} alumnos inscritos
-          </div>
-        </div>
+        <StatCard title="Alumnos Totales" value={totalStudents.toString()} sub="Activos e Inactivos" icon={<Users className="text-blue-600" />} />
+        <StatCard title="Tasa Retención" value={`${Math.round((activeStudents/totalStudents)*100)}%`} sub="Alumnos Activos" icon={<GraduationCap className="text-emerald-600" />} />
+        <StatCard title="Recaudación" value={`$${totalCollected.toLocaleString()}`} sub="Mes actual" icon={<DollarSign className="text-amber-600" />} />
+        <StatCard title="Pagos Pendientes" value={pendingPayments.toString()} sub="Exige seguimiento" icon={<AlertCircle className="text-rose-600" />} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Distribución de Alumnos */}
-        <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="text-xl font-black text-slate-800 flex items-center gap-3">
-              <i className="fas fa-chart-pie text-indigo-500"></i>
-              Composición de Alumnado
-            </h3>
-          </div>
-          <div className="space-y-6">
-            {levelDistribution.map(dist => (
-              <div key={dist.level} className="group">
-                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest mb-2">
-                  <span className="text-slate-500 group-hover:text-slate-900 transition-colors">{dist.level}</span>
-                  <span className="text-slate-400">{dist.count} Estudiantes</span>
-                </div>
-                <div className="w-full bg-slate-50 h-4 rounded-full overflow-hidden border border-slate-100 p-0.5">
-                  <div 
-                    className={`h-full rounded-full transition-all duration-1000 ease-out shadow-sm ${
-                      dist.level === EducationLevel.INITIAL ? 'bg-gradient-to-r from-orange-400 to-orange-500' :
-                      dist.level === EducationLevel.PRIMARY ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' :
-                      dist.level === EducationLevel.SECONDARY ? 'bg-gradient-to-r from-blue-400 to-blue-500' : 'bg-gradient-to-r from-purple-500 to-indigo-600'
-                    }`}
-                    style={{ width: `${students.length > 0 ? (dist.count / students.length) * 100 : 0}%` }}
-                  ></div>
-                </div>
-              </div>
-            ))}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+          <h3 className="text-lg font-bold text-slate-800 mb-4">Distribución por Nivel</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={studentsByLevel}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip cursor={{fill: '#f8fafc'}} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {studentsByLevel.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Políticas y Reglas */}
-        <div className="bg-slate-900 p-10 rounded-[3rem] shadow-2xl text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-          <h3 className="text-xl font-black mb-8 flex items-center gap-3 relative z-10">
-            <i className="fas fa-shield-check text-indigo-400"></i>
-            Validaciones Activas
-          </h3>
-          <div className="space-y-4 relative z-10">
-            {[
-              { icon: 'fa-calendar-clock', title: 'Margen de Examen', desc: '48 horas previas requeridas para inscripción.', color: 'text-indigo-400' },
-              { icon: 'fa-money-check-edit', title: 'Día de Vencimiento', desc: 'Cierre de ciclo de facturación el día 10.', color: 'text-emerald-400' },
-              { icon: 'fa-user-graduate', title: 'Doble Carrera', desc: 'Permitido en Terciario bajo convenio.', color: 'text-purple-400' },
-              { icon: 'fa-ban', title: 'Bloqueo Administrativo', desc: 'Restricción de exámenes por mora activa.', color: 'text-rose-400' },
-            ].map((rule, i) => (
-              <div key={i} className="flex gap-4 p-5 rounded-3xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                <div className={`w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center shrink-0 ${rule.color}`}>
-                  <i className={`fas ${rule.icon} text-xl`}></i>
-                </div>
-                <div>
-                  <div className="text-sm font-black">{rule.title}</div>
-                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">{rule.desc}</p>
-                </div>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+          <h3 className="text-lg font-bold text-slate-800 mb-4">Acciones Críticas</h3>
+          <div className="space-y-4">
+            <div className="p-4 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-between">
+              <div>
+                <p className="font-semibold text-slate-800">Cierre de Cuotas</p>
+                <p className="text-sm text-slate-500">Faltan 3 días para el vencimiento del 10</p>
               </div>
-            ))}
+              <button className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800">Verificar</button>
+            </div>
+            <div className="p-4 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-between">
+              <div>
+                <p className="font-semibold text-amber-900">Mesa de Exámenes</p>
+                <p className="text-sm text-amber-700">12 alumnos con deuda intentaron inscribirse</p>
+              </div>
+              <button className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700">Revisar</button>
+            </div>
+            <div className="p-4 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-between">
+              <div>
+                <p className="font-semibold text-blue-900">Inscripciones 2024</p>
+                <p className="text-sm text-blue-700">Período abierto para nivel Terciario</p>
+              </div>
+              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Gestionar</button>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 };
+
+const StatCard: React.FC<{ title: string; value: string; sub: string; icon: React.ReactNode }> = ({ title, value, sub, icon }) => (
+  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+    <div className="flex justify-between items-start mb-4">
+      <div className="p-3 bg-slate-50 rounded-lg">{icon}</div>
+      <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">+2.5%</span>
+    </div>
+    <h4 className="text-slate-500 text-sm font-medium">{title}</h4>
+    <p className="text-2xl font-bold text-slate-800 mt-1">{value}</p>
+    <p className="text-xs text-slate-400 mt-1">{sub}</p>
+  </div>
+);
 
 export default Dashboard;

@@ -1,5 +1,5 @@
 {
-  "name": "EduGestión Pro",
-  "description": "Comprehensive school management system for initial, primary, secondary, and tertiary levels with student CRUD, academic tracking, and automated billing.",
+  "name": "EduManager Pro - Sistema de Gestión Escolar",
+  "description": "Sistema integral de gestión para instituciones educativas que abarca desde nivel inicial hasta terciario, con módulos de alumnado, académico y cobranzas, incluyendo lógica de correlatividades y restricciones por mora.",
   "requestFramePermissions": []
 }
