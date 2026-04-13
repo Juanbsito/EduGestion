@@ -1,65 +1,160 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from './supabaseClient';
-
-interface PaginatedResult<T> {
-  data: T[];
-  count: number;
-  loading: boolean;
-  error: any;
-  page: number;
-  setPage: (page: number) => void;
-  refetch: () => void;
+export enum AcademicLevel {
+  INITIAL = 'Inicial',
+  PRIMARY = 'Primaria',
+  SECONDARY = 'Secundaria',
+  TERTIARY = 'Terciario'
 }
 
-export function usePaginatedQuery<T>(
-  table: string,
-  schoolId: string | undefined,
-  pageSize: number = 25,
-  filters: Record<string, any> = {}
-): PaginatedResult<T> {
-  const [data, setData] = useState<T[]>([]);
-  const [count, setCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [page, setPage] = useState(0);
-  const [refreshKey, setRefreshKey] = useState(0);
+export type UserRole = 'superadmin' | 'school_admin' | 'cashier' | 'administrative' | 'teacher';
 
-  const refetch = useCallback(() => {
-    setRefreshKey(prev => prev + 1);
-  }, []);
+export interface Profile {
+  id: string;
+  school_id: string;
+  role: UserRole;
+  email: string;
+  full_name: string;
+}
 
-  useEffect(() => {
-    if (!schoolId) return;
+export interface Career {
+  id: string;
+  code: string;
+  name: string;
+  duration: string;
+  description: string;
+  status: 'active' | 'inactive';
+}
 
-    async function fetchData() {
-      setLoading(true);
-      const from = page * pageSize;
-      const to = from + pageSize - 1;
+export interface Subject {
+  id: string;
+  code: string;
+  name: string;
+  level: AcademicLevel;
+  grade: string;
+  prerequisites: string[];
+  hoursPerWeek: number;
+}
 
-      let query = supabase
-        .from(table)
-        .select('*', { count: 'exact' })
-        .eq('school_id', schoolId)
-        .range(from, to)
-        .order('created_at', { ascending: false });
+export interface AcademicRecord {
+  id: string;
+  studentId: string;
+  subjectId: string;
+  grade: number;
+  status: 'Aprobada' | 'Desaprobada' | 'Cursando' | 'Final Pendiente';
+  date: string;
+  term: string;
+}
 
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value && value !== 'ALL') query = query.eq(key, value);
-      });
+export interface AttendanceRecord {
+  id: string;
+  studentId: string;
+  subjectId: string;
+  date: string;
+  status: 'Presente' | 'Ausente' | 'Tarde';
+}
 
-      const { data: fetchedData, count: totalCount, error: fetchError } = await query;
+export interface Communication {
+  id: string;
+  studentId: string;
+  date: string;
+  type: 'Nota' | 'Llamada' | 'Reunión' | 'Sanción';
+  content: string;
+  author: string;
+}
 
-      if (fetchError) setError(fetchError as any);
-      else {
-        setData(fetchedData as T[]);
-        setCount(totalCount || 0);
-      }
-      setLoading(false);
-    }
+export interface StudentFile {
+  id: string;
+  studentId: string;
+  name: string;
+  type: string;
+  url: string;
+  date: string;
+}
 
-    fetchData();
-  }, [table, schoolId, page, pageSize, JSON.stringify(filters), refreshKey]);
+export interface StudentTutor {
+  name: string;
+  phone: string;
+  dni: string;
+  address?: string;
+  relationship?: string;
+}
 
-  return { data, count, loading, error, page, setPage, refetch };
+export interface AuthorizedPerson {
+  name: string;
+  dni: string;
+  phone: string;
+  relationship: string;
+}
+
+export interface Student {
+  id: string;
+  school_id: string;
+  dni: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  birthDate?: string;
+  tutorName?: string;
+  tutorPhone?: string;
+  tutorDni?: string;
+  tutorAddress?: string;
+  tutorRelationship?: string;
+  additionalTutors?: StudentTutor[];
+  authorizedPersons?: AuthorizedPerson[];
+  level: AcademicLevel;
+  grade: string;
+  division?: string;
+  enrollmentDate: string;
+  status: 'ACTIVE' | 'INACTIVE';
+  careerIds: string[];
+}
+
+export interface Payment {
+  id: string;
+  studentId: string;
+  concept: string;
+  amount: number;
+  dueDate: string;
+  status: 'Pagada' | 'Pendiente' | 'Vencida';
+  isPaid: boolean;
+  paymentMethod?: 'Efectivo' | 'Tarjeta' | 'Transferencia';
+  receiptNumber?: string;
+  paidAt?: string;
+}
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'task' | 'alert' | 'info';
+  date: string;
+  read: boolean;
+}
+
+export interface Exam {
+  id: string;
+  subjectId: string;
+  type: 'Final' | 'Parcial' | 'Libre';
+  date: string;
+  closingDate: string;
+  location: string;
+  status: 'Programado' | 'Cerrado' | 'En curso';
+}
+
+export interface SchoolStats {
+  total_students: number;
+  active_students: number;
+  total_revenue_month: number;
+  pending_payments_count: number;
+}
+
+export interface SchoolSettings {
+  id: string;
+  school_id: string;
+  mp_access_token?: string;
+  macro_site_id?: string;
+  macro_secret_key?: string;
+  updated_at: string;
 }
