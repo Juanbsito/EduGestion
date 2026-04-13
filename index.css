@@ -1,5 +1,27 @@
-/* Global styles */
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
 body {
-  background-color: #f8fafc;
-  color: #0f172a;
+  @apply bg-[#F8FAFC] text-slate-900 antialiased font-medium;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes modalEnter {
+  from { opacity: 0; transform: scale(0.98) translateY(5px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.animate-modal {
+  animation: modalEnter 0.2s ease-out forwards;
 }
