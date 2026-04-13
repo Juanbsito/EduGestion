@@ -75,6 +75,15 @@ export interface StudentTutor {
   name: string;
   phone: string;
   dni: string;
+  address?: string;
+  relationship?: string;
+}
+
+export interface AuthorizedPerson {
+  name: string;
+  dni: string;
+  phone: string;
+  relationship: string;
 }
 
 export interface Student {
@@ -90,7 +99,10 @@ export interface Student {
   tutorName?: string;
   tutorPhone?: string;
   tutorDni?: string;
+  tutorAddress?: string;
+  tutorRelationship?: string;
   additionalTutors?: StudentTutor[];
+  authorizedPersons?: AuthorizedPerson[];
   level: AcademicLevel;
   grade: string;
   division?: string;
