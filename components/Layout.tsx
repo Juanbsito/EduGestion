@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { 
   Users, Home, BookOpen, ClipboardList, CreditCard, ChevronDown, 
-  UserPlus, BarChart2, Calendar, GraduationCap, LogOut, Bell, X, Check, Settings
+  UserPlus, BarChart2, Calendar, GraduationCap, LogOut, Bell, X, Check, Settings, Shield
 } from 'lucide-react';
 import { Notification, UserRole } from '../types';
 
