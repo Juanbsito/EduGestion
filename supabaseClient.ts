@@ -24,6 +24,17 @@ let mockUser: any = JSON.parse(localStorage.getItem('edumanager_user') || 'null'
 let listeners: any[] = [];
 
 const createMockSupabase = () => {
+  const getTableData = (table: string) => {
+    let initial: any[] = [];
+    if (table === 'students') initial = INITIAL_STUDENTS;
+    else if (table === 'careers') initial = INITIAL_CAREERS;
+    else if (table === 'subjects') initial = INITIAL_SUBJECTS;
+    else if (table === 'payments') initial = INITIAL_PAYMENTS;
+    else if (table === 'academic_records') initial = INITIAL_ACADEMIC_RECORDS;
+    
+    return getStorage(table, initial);
+  };
+
   const chain = (table: string, filters: any = {}) => {
     const obj = {
       select: () => obj,
@@ -31,21 +42,22 @@ const createMockSupabase = () => {
       range: (f: number, t: number) => { obj._range = [f, t]; return obj; },
       order: () => obj,
       single: async () => {
-        if (table === 'profiles') return { data: { id: filters.id, school_id: 'school-1', role: mockUser?.email?.includes('superadmin') ? 'superadmin' : 'school_admin', full_name: 'Usuario Demo' }, error: null };
         if (table === 'school_stats') {
-          const students = getStorage('students', INITIAL_STUDENTS);
+          const students = getTableData('students');
           return { data: { total_students: students.length, active_students: students.filter((s:any) => s.status === 'ACTIVE').length, total_revenue_month: 1240000, pending_payments_count: 8 }, error: null };
         }
-        return { data: null, error: null };
+        
+        const db = getTableData(table);
+        const filtered = db.filter((i: any) => Object.entries(filters).every(([k, v]) => !v || i[k] === v));
+        
+        if (table === 'profiles' && filtered.length === 0 && filters.id) {
+           return { data: { id: filters.id, school_id: 'school-1', role: mockUser?.email?.includes('superadmin') ? 'superadmin' : 'school_admin', full_name: 'Usuario Demo' }, error: null };
+        }
+        
+        return { data: filtered[0] || null, error: null };
       },
       then: (onfulfilled: any) => {
-        let db = getStorage(table, []);
-        if (table === 'students' && db.length === 0) db = getStorage(table, INITIAL_STUDENTS);
-        if (table === 'careers' && db.length === 0) db = getStorage(table, INITIAL_CAREERS);
-        if (table === 'subjects' && db.length === 0) db = getStorage(table, INITIAL_SUBJECTS);
-        if (table === 'payments' && db.length === 0) db = getStorage(table, INITIAL_PAYMENTS);
-        if (table === 'academic_records' && db.length === 0) db = getStorage(table, INITIAL_ACADEMIC_RECORDS);
-
+        const db = getTableData(table);
         const filtered = db.filter((i: any) => Object.entries(filters).every(([k, v]) => !v || i[k] === v));
         const result = obj._range ? filtered.slice(obj._range[0], obj._range[1] + 1) : filtered;
         
@@ -84,7 +96,7 @@ const createMockSupabase = () => {
     from: (table: string) => ({
       ...chain(table),
       insert: async (data: any) => {
-        const db = getStorage(table, []);
+        const db = getTableData(table);
         const payload = Array.isArray(data) ? data : [data];
         const newItems = payload.map(item => ({ 
           ...item, 
@@ -96,7 +108,7 @@ const createMockSupabase = () => {
       },
       update: (data: any) => ({
         eq: async (col: string, val: any) => {
-          const db = getStorage(table, []);
+          const db = getTableData(table);
           const updated = db.map((item: any) => item[col] === val ? { ...item, ...data } : item);
           saveStorage(table, updated);
           return { data: updated.filter((i: any) => i[col] === val), error: null };
@@ -104,7 +116,7 @@ const createMockSupabase = () => {
       }),
       delete: () => ({
         eq: async (c: string, v: any) => {
-          const db = getStorage(table, []);
+          const db = getTableData(table);
           const filtered = db.filter((s: any) => s[c] !== v);
           saveStorage(table, filtered);
           return { error: null };
