@@ -62,21 +62,35 @@ const PaymentPortal = () => {
   };
 
   const confirmPayment = async () => {
+    if (selectedPayments.length === 0) return;
     setLoading(true);
-    // Simulate payment processing and QR generation
-    setTimeout(async () => {
-      try {
-        // In a real app, we would update the payments in Supabase
-        // await Promise.all(selectedPayments.map(id => 
-        //   supabase.from('payments').update({ isPaid: true, status: 'Pagada', paidAt: new Date().toISOString() }).eq('id', id)
-        // ));
-        setPaymentSuccess(true);
-      } catch (err) {
-        setError('Error al procesar el pago.');
-      } finally {
-        setLoading(false);
+    setError(null);
+
+    try {
+      const selectedItems = payments.filter(p => selectedPayments.includes(p.id));
+      
+      const response = await fetch('/api/payments/create-preference', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: selectedItems,
+          studentId: student?.id,
+          payerEmail: student?.email || 'tutor@ejemplo.com'
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.init_point) {
+        // Redirigir a Mercado Pago
+        window.location.href = data.init_point;
+      } else {
+        throw new Error('No se pudo generar el link de pago.');
       }
-    }, 2000);
+    } catch (err: any) {
+      setError(err.message || 'Error al conectar con la pasarela de pago.');
+      setLoading(false);
+    }
   };
 
   if (paymentSuccess) {
