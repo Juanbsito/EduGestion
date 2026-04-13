@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { UserPlus, ArrowLeft, Save, Plus, Loader2, UserCheck, ChevronDown, Trash2, TrendingUp } from 'lucide-react';
-import { AcademicLevel, Student, StudentTutor } from '../types';
+import { UserPlus, ArrowLeft, Save, Plus, Loader2, UserCheck, ChevronDown, Trash2, TrendingUp, Shield } from 'lucide-react';
+import { AcademicLevel, Student, StudentTutor, AuthorizedPerson } from '../types';
 import { supabase } from '../supabaseClient';
 
 interface NewStudentFormProps {
@@ -25,7 +25,10 @@ const NewStudentForm: React.FC<NewStudentFormProps> = ({ initialData, onCancel, 
     tutorName: '',
     tutorPhone: '',
     tutorDni: '',
+    tutorAddress: '',
+    tutorRelationship: '',
     additionalTutors: [] as StudentTutor[],
+    authorizedPersons: [] as AuthorizedPerson[],
     level: '' as any,
     grade: '',
     division: '',
@@ -77,7 +80,10 @@ const NewStudentForm: React.FC<NewStudentFormProps> = ({ initialData, onCancel, 
         tutorName: initialData.tutorName || '',
         tutorPhone: initialData.tutorPhone || '',
         tutorDni: initialData.tutorDni || '',
+        tutorAddress: initialData.tutorAddress || '',
+        tutorRelationship: initialData.tutorRelationship || '',
         additionalTutors: initialData.additionalTutors || [],
+        authorizedPersons: initialData.authorizedPersons || [],
         level: initialData.level,
         grade: initialData.grade,
         division: initialData.division || '',
@@ -116,7 +122,7 @@ const NewStudentForm: React.FC<NewStudentFormProps> = ({ initialData, onCancel, 
   const addTutor = () => {
     setFormData({
       ...formData,
-      additionalTutors: [...formData.additionalTutors, { name: '', phone: '', dni: '' }]
+      additionalTutors: [...formData.additionalTutors, { name: '', phone: '', dni: '', address: '', relationship: '' }]
     });
   };
 
@@ -130,6 +136,25 @@ const NewStudentForm: React.FC<NewStudentFormProps> = ({ initialData, onCancel, 
     const updated = [...formData.additionalTutors];
     updated[index] = { ...updated[index], [field]: value };
     setFormData({ ...formData, additionalTutors: updated });
+  };
+
+  const addAuthorizedPerson = () => {
+    setFormData({
+      ...formData,
+      authorizedPersons: [...formData.authorizedPersons, { name: '', dni: '', phone: '', relationship: '' }]
+    });
+  };
+
+  const removeAuthorizedPerson = (index: number) => {
+    const updated = [...formData.authorizedPersons];
+    updated.splice(index, 1);
+    setFormData({ ...formData, authorizedPersons: updated });
+  };
+
+  const updateAuthorizedPerson = (index: number, field: keyof AuthorizedPerson, value: string) => {
+    const updated = [...formData.authorizedPersons];
+    updated[index] = { ...updated[index], [field]: value };
+    setFormData({ ...formData, authorizedPersons: updated });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -326,6 +351,27 @@ const NewStudentForm: React.FC<NewStudentFormProps> = ({ initialData, onCancel, 
               </div>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-1.5">
+                <label className="text-sm font-bold text-slate-800">Parentesco</label>
+                <input 
+                  className="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-slate-900 transition-all font-medium" 
+                  placeholder="Madre, Padre, Abuelo/a..."
+                  value={formData.tutorRelationship} 
+                  onChange={e => setFormData({...formData, tutorRelationship: e.target.value})} 
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-bold text-slate-800">Domicilio del Tutor</label>
+                <input 
+                  className="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-slate-900 transition-all font-medium" 
+                  placeholder="Calle 123, Ciudad"
+                  value={formData.tutorAddress} 
+                  onChange={e => setFormData({...formData, tutorAddress: e.target.value})} 
+                />
+              </div>
+            </div>
+
           {formData.additionalTutors.map((tutor, idx) => (
             <div key={idx} className="animate-in slide-in-from-top-2 duration-300 space-y-4 pt-4 border-t border-slate-50 relative group">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pr-12">
@@ -357,6 +403,26 @@ const NewStudentForm: React.FC<NewStudentFormProps> = ({ initialData, onCancel, 
                   />
                 </div>
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pr-12">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-slate-800">Parentesco</label>
+                  <input 
+                    className="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-slate-900 transition-all font-medium" 
+                    placeholder="Tío/a, Hermano/a..."
+                    value={tutor.relationship} 
+                    onChange={e => updateAdditionalTutor(idx, 'relationship', e.target.value)} 
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-slate-800">Domicilio</label>
+                  <input 
+                    className="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-slate-900 transition-all font-medium" 
+                    placeholder="Calle 123, Ciudad"
+                    value={tutor.address} 
+                    onChange={e => updateAdditionalTutor(idx, 'address', e.target.value)} 
+                  />
+                </div>
+              </div>
               <button 
                 type="button"
                 onClick={() => removeTutor(idx)}
@@ -366,6 +432,74 @@ const NewStudentForm: React.FC<NewStudentFormProps> = ({ initialData, onCancel, 
               </button>
             </div>
           ))}
+        </section>
+
+        <section className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 space-y-6">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-lg font-bold text-slate-900">Personas Autorizadas (Urgencias)</h3>
+            <button 
+              type="button"
+              onClick={addAuthorizedPerson}
+              className="text-xs font-bold text-indigo-600 flex items-center gap-1.5 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-all"
+            >
+              <Plus size={14} /> Agregar autorizado
+            </button>
+          </div>
+
+          {formData.authorizedPersons.map((person, idx) => (
+            <div key={idx} className="animate-in slide-in-from-top-2 duration-300 space-y-4 pt-4 border-t border-slate-50 relative group">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pr-12">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-slate-800">Nombre Completo</label>
+                  <input 
+                    className="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-slate-900 transition-all font-medium" 
+                    placeholder="Nombre Completo"
+                    value={person.name} 
+                    onChange={e => updateAuthorizedPerson(idx, 'name', e.target.value)} 
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-slate-800">DNI</label>
+                  <input 
+                    className="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-slate-900 transition-all font-medium" 
+                    placeholder="12345678"
+                    value={person.dni} 
+                    onChange={e => updateAuthorizedPerson(idx, 'dni', e.target.value)} 
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pr-12">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-slate-800">Teléfono</label>
+                  <input 
+                    className="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-slate-900 transition-all font-medium" 
+                    placeholder="+54 11 ..."
+                    value={person.phone} 
+                    onChange={e => updateAuthorizedPerson(idx, 'phone', e.target.value)} 
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-slate-800">Parentesco/Vínculo</label>
+                  <input 
+                    className="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-slate-900 transition-all font-medium" 
+                    placeholder="Vecino, Tío, etc."
+                    value={person.relationship} 
+                    onChange={e => updateAuthorizedPerson(idx, 'relationship', e.target.value)} 
+                  />
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => removeAuthorizedPerson(idx)}
+                className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-rose-300 hover:text-rose-600 transition-colors"
+              >
+                <Trash2 size={18} />
+              </button>
+            </div>
+          ))}
+          {formData.authorizedPersons.length === 0 && (
+            <p className="text-sm text-slate-400 italic">No hay personas autorizadas registradas para retirar al alumno.</p>
+          )}
         </section>
 
         <section className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 space-y-6">
