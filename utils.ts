@@ -1,65 +1,59 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from './supabaseClient';
+import { Student, Payment, AcademicLevel, Exam } from './types';
+import { LEVEL_FEES } from './constants';
 
-interface PaginatedResult<T> {
-  data: T[];
-  count: number;
-  loading: boolean;
-  error: any;
-  page: number;
-  setPage: (page: number) => void;
-  refetch: () => void;
-}
+/**
+ * Calculates the monthly fee for a student based on their level and careers.
+ */
+export const calculateMonthlyFee = (student: Student): number => {
+  const baseFee = LEVEL_FEES[student.level];
+  if (student.level === AcademicLevel.TERTIARY) {
+    // Tertiary students pay per career
+    return baseFee * Math.max(1, student.careerIds.length);
+  }
+  return baseFee;
+};
 
-export function usePaginatedQuery<T>(
-  table: string,
-  schoolId: string | undefined,
-  pageSize: number = 25,
-  filters: Record<string, any> = {}
-): PaginatedResult<T> {
-  const [data, setData] = useState<T[]>([]);
-  const [count, setCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [page, setPage] = useState(0);
-  const [refreshKey, setRefreshKey] = useState(0);
+/**
+ * Checks if a student is delinquent (has unpaid fees past the 10th of the month).
+ */
+export const hasPendingFees = (studentId: string, payments: Payment[]): boolean => {
+  const today = new Date();
+  const currentDay = today.getDate();
+  const currentMonth = today.getMonth() + 1;
+  const currentYear = today.getFullYear();
 
-  const refetch = useCallback(() => {
-    setRefreshKey(prev => prev + 1);
-  }, []);
+  return payments.some(p => {
+    if (p.studentId !== studentId) return false;
+    if (p.isPaid) return false;
 
-  useEffect(() => {
-    if (!schoolId) return;
+    const dueDate = new Date(p.dueDate);
+    // If today is past the due date (10th of month) and it's unpaid
+    return today > dueDate;
+  });
+};
 
-    async function fetchData() {
-      setLoading(true);
-      const from = page * pageSize;
-      const to = from + pageSize - 1;
+/**
+ * Validates if an exam registration is allowed (48 hours prior and no debt).
+ */
+export const validateExamRegistration = (
+  studentId: string,
+  exam: Exam,
+  payments: Payment[]
+): { allowed: boolean; reason?: string } => {
+  // Check debt
+  if (hasPendingFees(studentId, payments)) {
+    return { allowed: false, reason: 'El alumno presenta cuotas impagas vencidas.' };
+  }
 
-      let query = supabase
-        .from(table)
-        .select('*', { count: 'exact' })
-        .eq('school_id', schoolId)
-        .range(from, to)
-        .order('created_at', { ascending: false });
+  // Check 48 hours anticipation
+  const now = new Date();
+  const examDate = new Date(exam.date);
+  const diffInHours = (examDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value && value !== 'ALL') query = query.eq(key, value);
-      });
+  if (diffInHours < 48) {
+    return { allowed: false, reason: 'La inscripción debe realizarse con al menos 48hs de anticipación.' };
+  }
 
-      const { data: fetchedData, count: totalCount, error: fetchError } = await query;
-
-      if (fetchError) setError(fetchError as any);
-      else {
-        setData(fetchedData as T[]);
-        setCount(totalCount || 0);
-      }
-      setLoading(false);
-    }
-
-    fetchData();
-  }, [table, schoolId, page, pageSize, JSON.stringify(filters), refreshKey]);
-
-  return { data, count, loading, error, page, setPage, refetch };
-}
+  return { allowed: true };
+};

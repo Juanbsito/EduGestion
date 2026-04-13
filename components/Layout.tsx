@@ -42,6 +42,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
       { id: 'billing-config', label: 'Aranceles' }
     ]},
     { id: 'users', label: 'Usuarios', icon: Settings, roles: ['superadmin'] },
+    { id: 'settings', label: 'Configuración', icon: Shield, roles: ['superadmin'] },
     { id: 'reports', label: 'Informes', icon: BarChart2, roles: ['superadmin', 'school_admin'] },
     { id: 'calendar', label: 'Calendario', icon: Calendar, roles: ['superadmin', 'school_admin', 'cashier', 'administrative'] }
   ].filter(item => item.roles.includes(userRole));
@@ -68,6 +69,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
       case 'reports': return 'Informes Institucionales';
       case 'calendar': return 'Calendario Académico';
       case 'users': return 'Gestión de Usuarios';
+      case 'settings': return 'Configuración de la Institución';
       default: return id.replace('-', ' ').toUpperCase();
     }
   };
