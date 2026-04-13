@@ -26,20 +26,21 @@ export const INITIAL_STUDENTS: Student[] = [
     id: 'st1', school_id: 'school-1', dni: '45678901', firstName: 'Lucía', lastName: 'González',
     email: 'lucia.gonzalez@email.com', level: AcademicLevel.INITIAL, grade: 'Sala de 4 A', 
     careerIds: [], enrollmentDate: '2025-03-01', status: 'ACTIVE',
-    tutorName: 'María González', tutorDni: '12345678'
+    tutorName: 'María González', tutorDni: '12345678', tutorRelationship: 'Madre', tutorAddress: 'Av. Siempre Viva 123'
   },
   {
     id: 'st2', school_id: 'school-1', dni: '43567890', firstName: 'Mateo', lastName: 'Rodríguez',
     email: 'mateo.rodriguez@email.com', level: AcademicLevel.PRIMARY, grade: '3° B', 
     careerIds: [], enrollmentDate: '2025-03-10', status: 'ACTIVE',
-    tutorName: 'Roberto Rodríguez', tutorDni: '23456789'
+    tutorName: 'Roberto Rodríguez', tutorDni: '23456789', tutorRelationship: 'Padre', tutorAddress: 'Calle Falsa 123'
   },
   {
     id: 'st3', school_id: 'school-1', dni: '40123456', firstName: 'Valentina', lastName: 'Martínez',
     email: 'v.martinez@email.com', level: AcademicLevel.TERTIARY, grade: '2° Año', 
     careerIds: ['c1'], enrollmentDate: '2024-03-05', status: 'ACTIVE',
-    tutorName: 'Elena Martínez', tutorDni: '34567890',
-    additionalTutors: [{ name: 'Carlos Martínez', phone: '123456', dni: '98765432' }]
+    tutorName: 'Elena Martínez', tutorDni: '34567890', tutorRelationship: 'Madre', tutorAddress: 'Paseo del Prado 456',
+    additionalTutors: [{ name: 'Carlos Martínez', phone: '123456', dni: '98765432', relationship: 'Padre', address: 'Paseo del Prado 456' }],
+    authorizedPersons: [{ name: 'Abuela Rosa', dni: '11223344', phone: '555-0199', relationship: 'Abuela' }]
   }
 ];
 
